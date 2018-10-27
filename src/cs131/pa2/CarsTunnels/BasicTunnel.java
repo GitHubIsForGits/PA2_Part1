@@ -1,9 +1,24 @@
 package cs131.pa2.CarsTunnels;
 
+import java.util.LinkedList;
+import java.util.concurrent.locks.*;
+
 import cs131.pa2.Abstract.Tunnel;
 import cs131.pa2.Abstract.Vehicle;
 
 public class BasicTunnel extends Tunnel{
+	private final Lock lock = new ReentrantLock(); 
+	private final Condition empty = lock.newCondition();
+	
+	private LinkedList<Vehicle> theTunnel = new LinkedList();
+	
+	private int activeCars;
+	private int activeSled;
+	private int waitingCars;
+	private int waitingSleds;
+
+	
+	
 
 	public BasicTunnel(String name) {
 		super(name);
