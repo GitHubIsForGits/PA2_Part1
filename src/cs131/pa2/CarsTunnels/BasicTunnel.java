@@ -34,6 +34,11 @@ public class BasicTunnel extends Tunnel{
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
 		lock.lock();
+		if(vehicle.getClass() == Car.class) {
+			/*
+			 * If it's a car do something.
+			 */
+		}
 		/*
 		 * Check how many vehicles are in the tunnel
 		 * if no room return false and unlock.
