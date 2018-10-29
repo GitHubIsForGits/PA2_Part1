@@ -14,7 +14,6 @@ public class BasicTunnel extends Tunnel{
 	
 	private int activeCars;
 	private int activeSled;
-	private int waitingCars;
 	private int waitingSleds;
 	
 	
@@ -22,8 +21,12 @@ public class BasicTunnel extends Tunnel{
 		return (activeCars > 2 || waitingSleds < 1 || activeSled < 1);
 	}
 	
-	private boolean sledShouldPass() {//Returns true if sleds should pass this tunnel 
-		return (activeCars > 0 || waitingSleds > 0 || activeSled > 0);
+	private boolean sledShouldWait() {//Returns true if sleds should pass this tunnel 
+		return ((activeCars > 0 || activeSled > 0) && waitingSleds < 1);
+	}
+	
+	private boolean sledShouldSkip() {
+		return ((activeCars > 0 || activeSled > 0) && waitingSleds > 0);
 	}
 	
 
@@ -34,10 +37,26 @@ public class BasicTunnel extends Tunnel{
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
 		lock.lock();
-		if(vehicle.getClass() == Car.class) {
-			/*
-			 * If it's a car do something.
-			 */
+		if(vehicle instanceof Car) {
+			if (carsShouldPass()) {
+				activeCars++;
+				return true;
+			} else {
+				lock.unlock();
+				return false;
+			}
+		} else if (vehicle instanceof Sled) {
+			if(sledShouldSkip()) {
+				lock.unlock();
+				return false;
+			} else if (sledShouldWait()) {
+				waitingSleds++;
+				lock.unlock();
+				return false;
+			} else {
+				activeSled++;
+				return true;
+			}
 		}
 		/*
 		 * Check how many vehicles are in the tunnel
@@ -51,10 +70,14 @@ public class BasicTunnel extends Tunnel{
 
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
-		/*
-		 * Remove a vehicle of vehicle type from the tunnel.
-		 * Synchronize while removing?
-		 */
+		lock.lock();
+		if(vehicle instanceof Car) {
+			lock.unlock();
+			activeCars--;
+		} else if (vehicle instanceof Sled) {
+			lock.unlock();
+			activeSled--;
+		}
 		
 	}
 	
