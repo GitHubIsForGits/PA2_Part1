@@ -8,25 +8,20 @@ import cs131.pa2.Abstract.Vehicle;
 
 public class BasicTunnel extends Tunnel{
 	private final Lock lock = new ReentrantLock(); 
-	private final Condition empty = lock.newCondition();
 	
-	private LinkedList<Vehicle> theTunnel = new LinkedList();
+	private String dir = null; 
+	
 	
 	private int activeCars;
 	private int activeSled;
-	private int waitingSleds;
 	
 	
 	private boolean carsShouldPass() {//Returns true if cars should pass this tunnel
-		return (activeCars > 2 || waitingSleds < 1 || activeSled < 1);
+		return (activeCars > 2 || activeSled > 0);
 	}
 	
-	private boolean sledShouldWait() {//Returns true if sleds should pass this tunnel 
-		return ((activeCars > 0 || activeSled > 0) && waitingSleds < 1);
-	}
-	
-	private boolean sledShouldSkip() {
-		return ((activeCars > 0 || activeSled > 0) && waitingSleds > 0);
+	private boolean sledShouldPass() {
+		return (activeCars > 0 || activeSled > 0);
 	}
 	
 
@@ -35,48 +30,54 @@ public class BasicTunnel extends Tunnel{
 	}
 
 	@Override
-	public boolean tryToEnterInner(Vehicle vehicle) {
+	public synchronized boolean tryToEnterInner(Vehicle vehicle) {
 		lock.lock();
+		if (dir == null || vehicle.getDirection().toString().equalsIgnoreCase(dir)) {
+			dir = vehicle.getDirection().toString();
+			return checkToEnter(vehicle);
+		}
+		else if(activeCars == 0 && activeSled == 0) {
+			dir = null;
+		}
+		return false;
+	}
+	
+	public synchronized boolean checkToEnter(Vehicle vehicle) {
 		if(vehicle instanceof Car) {
 			if (carsShouldPass()) {
 				activeCars++;
+				lock.unlock();
 				return true;
 			} else {
 				lock.unlock();
 				return false;
 			}
-		} else if (vehicle instanceof Sled) {
-			if(sledShouldSkip()) {
-				lock.unlock();
-				return false;
-			} else if (sledShouldWait()) {
-				waitingSleds++;
-				lock.unlock();
-				return false;
-			} else {
-				activeSled++;
-				return true;
-			}
+	} else if (vehicle instanceof Sled) {
+		if(sledShouldPass()) {
+			lock.unlock();
+			return false;
+		} else {
+			activeSled++;
+			lock.unlock();
+			return true;
 		}
-		/*
-		 * Check how many vehicles are in the tunnel
-		 * if no room return false and unlock.
-		 * 
-		 * If there is room, put it in and unlock.
-		 * 
-		 */
+		}
+		lock.unlock();
 		return false;
 	}
-
+	
+	
 	@Override
-	public void exitTunnelInner(Vehicle vehicle) {
+	public synchronized void exitTunnelInner(Vehicle vehicle) {
 		lock.lock();
 		if(vehicle instanceof Car) {
 			lock.unlock();
 			activeCars--;
+			
 		} else if (vehicle instanceof Sled) {
 			lock.unlock();
 			activeSled--;
+		
 		}
 		
 	}
