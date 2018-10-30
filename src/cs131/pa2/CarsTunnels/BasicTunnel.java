@@ -32,19 +32,18 @@ public class BasicTunnel extends Tunnel{
 	@Override
 	public synchronized boolean tryToEnterInner(Vehicle vehicle) {
 		lock.lock();
-		if (dir == null || vehicle.getDirection().toString().equalsIgnoreCase(dir)) {
+		if (dir == null) {
+			dir = vehicle.getDirection().toString(); 
+			return checkToEnter(vehicle);
+		} else if (vehicle.getDirection().toString().equals(dir)) {
 			dir = vehicle.getDirection().toString();
 			return checkToEnter(vehicle);
-		}
-		else if(activeCars == 0 && activeSled == 0) {
-			dir = null;
-		}
-		return false;
+		} return false;
 	}
 	
 	public synchronized boolean checkToEnter(Vehicle vehicle) {
 		if(vehicle instanceof Car) {
-			if (carsShouldPass()) {
+			if (!carsShouldPass()) {
 				activeCars++;
 				lock.unlock();
 				return true;
@@ -52,16 +51,16 @@ public class BasicTunnel extends Tunnel{
 				lock.unlock();
 				return false;
 			}
-	} else if (vehicle instanceof Sled) {
-		if(sledShouldPass()) {
-			lock.unlock();
-			return false;
-		} else {
-			activeSled++;
-			lock.unlock();
-			return true;
-		}
-		}
+		} else if (vehicle instanceof Sled) {
+			if(sledShouldPass()) {
+				lock.unlock();
+				return false;
+			} else {
+				activeSled++;
+				lock.unlock();
+				return true;
+			}
+		}	
 		lock.unlock();
 		return false;
 	}
@@ -70,16 +69,19 @@ public class BasicTunnel extends Tunnel{
 	@Override
 	public synchronized void exitTunnelInner(Vehicle vehicle) {
 		lock.lock();
-		if(vehicle instanceof Car) {
+		try {
+			if(vehicle instanceof Car) {
+				activeCars--;			
+			} else if (vehicle instanceof Sled) {
+				activeSled--;	
+			}
+			if (activeCars + activeSled == 0) {
+				dir = null;
+			}
+		} finally {
 			lock.unlock();
-			activeCars--;
-			
-		} else if (vehicle instanceof Sled) {
-			lock.unlock();
-			activeSled--;
-		
+			return;
 		}
-		
 	}
 	
 }
