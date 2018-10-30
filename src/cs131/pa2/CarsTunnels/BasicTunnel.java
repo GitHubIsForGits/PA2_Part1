@@ -32,13 +32,15 @@ public class BasicTunnel extends Tunnel{
 	@Override
 	public synchronized boolean tryToEnterInner(Vehicle vehicle) {//Directional checking
 		lock.lock();
-		if (dir == null) {
-			dir = vehicle.getDirection().toString(); 
-			return checkToEnter(vehicle);
-		} else if (vehicle.getDirection().toString().equals(dir)) {
-			dir = vehicle.getDirection().toString();
-			return checkToEnter(vehicle);
-		} return false;
+			if (dir == null) {
+				dir = vehicle.getDirection().toString(); 
+				return checkToEnter(vehicle);
+			} else if (vehicle.getDirection().toString().equals(dir)) {
+				dir = vehicle.getDirection().toString();
+				return checkToEnter(vehicle);
+			} 
+			lock.unlock();
+			return false;
 	}
 	
 	public synchronized boolean checkToEnter(Vehicle vehicle) {//Is the tunnel full checking
@@ -60,7 +62,7 @@ public class BasicTunnel extends Tunnel{
 				lock.unlock();
 				return true;
 			}
-		}	
+		}
 		lock.unlock();
 		return false;
 	}
