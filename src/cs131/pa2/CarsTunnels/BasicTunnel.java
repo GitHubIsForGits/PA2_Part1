@@ -20,7 +20,7 @@ public class BasicTunnel extends Tunnel{
 		return (activeCars > 2 || activeSled > 0);
 	}
 	
-	private boolean sledShouldPass() {
+	private boolean sledShouldPass() {//returns true if sleds should pass this tunnel
 		return (activeCars > 0 || activeSled > 0);
 	}
 	
@@ -30,7 +30,7 @@ public class BasicTunnel extends Tunnel{
 	}
 
 	@Override
-	public synchronized boolean tryToEnterInner(Vehicle vehicle) {
+	public synchronized boolean tryToEnterInner(Vehicle vehicle) {//Directional checking
 		lock.lock();
 		if (dir == null) {
 			dir = vehicle.getDirection().toString(); 
@@ -41,7 +41,7 @@ public class BasicTunnel extends Tunnel{
 		} return false;
 	}
 	
-	public synchronized boolean checkToEnter(Vehicle vehicle) {
+	public synchronized boolean checkToEnter(Vehicle vehicle) {//Is the tunnel full checking
 		if(vehicle instanceof Car) {
 			if (!carsShouldPass()) {
 				activeCars++;
@@ -67,7 +67,7 @@ public class BasicTunnel extends Tunnel{
 	
 	
 	@Override
-	public synchronized void exitTunnelInner(Vehicle vehicle) {
+	public synchronized void exitTunnelInner(Vehicle vehicle) {//Reset direction if tunnel is empty, and also exit vehicles.
 		lock.lock();
 		try {
 			if(vehicle instanceof Car) {
