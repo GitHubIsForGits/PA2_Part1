@@ -9,11 +9,11 @@ import cs131.pa2.Abstract.Vehicle;
 public class BasicTunnel extends Tunnel{
 	private final Lock lock = new ReentrantLock(); 
 	
-	private String dir = null; 
+	private String dir = null; //Variable to check direction
 	
 	
-	private int activeCars;
-	private int activeSled;
+	private int activeCars;//Car count
+	private int activeSled;//Sled count
 	
 	
 	private boolean carsShouldPass() {//Returns true if cars should pass this tunnel
