@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,13 +14,15 @@ import cs131.pa2.Abstract.Vehicle;
 
 public class PriorityScheduler extends Tunnel{
 	private final Lock lock = new ReentrantLock(); 
+	private final Condition prioCond = lock.newCondition();
 	
 	public Collection<Tunnel> TunnelList = new LinkedList();
 	
-	public Collection<Vehicle> waitingVehicles = new PriorityQueue();
-	
 	int maxWaitingPriority = 0;
 	
+	Boolean gottaWait(Vehicle vehicle) {
+		return (vehicle.getPriority() < maxWaitingPriority);
+	}
 
 	
 	
@@ -30,24 +33,29 @@ public class PriorityScheduler extends Tunnel{
 	}
 
 	@Override
-	public synchronized boolean tryToEnterInner(Vehicle vehicle) {
+	public boolean tryToEnterInner(Vehicle vehicle) {
+		//lock.lock();
 		
-		int vPrio = vehicle.getPriority();
-		if (vPrio < maxWaitingPriority) {
-			//vehicle.wait();
-			waitingVehicles.add(vehicle);
-			return false;
-		} else {
+		while(true) {
+			while (gottaWait(vehicle)) {
+				try {
+					prioCond.await();
+				} catch (InterruptedException e) {} 
+			}
 			for(Tunnel tunnel: TunnelList) {
 				if(tunnel.tryToEnterInner(vehicle)) {
 					return true;
 				} 
 			}
 			maxWaitingPriority = vehicle.getPriority();
-			//vehicle.wait()
-			waitingVehicles.add(vehicle);
-			return false;
+			try {
+				prioCond.await();
+			} catch (InterruptedException e) {}
+			
 		}
+		
+		
+		
 		
 		
 		
@@ -62,18 +70,12 @@ public class PriorityScheduler extends Tunnel{
 
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
+		//lock.lock();
+		//exitTunnelInner(vehicle) on basictunnel
+		prioCond.signalAll();
+		maxWaitingPriority = vehicle.getPriority();
 		
-		exitTunnelInner(vehicle);	
-		Iterator<Tunnel> i = TunnelList.iterator();
-		Tunnel temp = i.next();
-		while (i.hasNext()) {
-			if(temp instanceof BasicTunnel) {
-				if( ((BasicTunnel)temp).activeCars == 0 && ((BasicTunnel)temp).activeSled == 0 ) {
-					
-					
-				}
-			}
-		} 
+		
 	}
 	
 }

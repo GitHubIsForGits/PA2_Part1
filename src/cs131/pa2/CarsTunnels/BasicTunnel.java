@@ -7,7 +7,6 @@ import cs131.pa2.Abstract.Tunnel;
 import cs131.pa2.Abstract.Vehicle;
 
 public class BasicTunnel extends Tunnel{
-	private final Lock lock = new ReentrantLock(); 
 	
 	private String dir = null; //Variable to check direction
 	
@@ -32,7 +31,6 @@ public class BasicTunnel extends Tunnel{
 
 	@Override
 	public synchronized boolean tryToEnterInner(Vehicle vehicle) {//Directional checking
-		lock.lock();
 			if (dir == null) {
 				dir = vehicle.getDirection().toString(); 
 				return checkToEnter(vehicle);
@@ -40,7 +38,6 @@ public class BasicTunnel extends Tunnel{
 				dir = vehicle.getDirection().toString();
 				return checkToEnter(vehicle);
 			} 
-			lock.unlock();
 			return false;
 	}
 	
@@ -48,30 +45,24 @@ public class BasicTunnel extends Tunnel{
 		if(vehicle instanceof Car) {
 			if (!carsShouldPass()) {
 				activeCars++;
-				lock.unlock();
 				return true;
 			} else {
-				lock.unlock();
 				return false;
 			}
 		} else if (vehicle instanceof Sled) {
 			if(sledShouldPass()) {
-				lock.unlock();
 				return false;
 			} else {
 				activeSled++;
-				lock.unlock();
 				return true;
 			}
 		}
-		lock.unlock();
 		return false;
 	}
 	
 	
 	@Override
 	public synchronized void exitTunnelInner(Vehicle vehicle) {//Reset direction if tunnel is empty, and also exit vehicles.
-		lock.lock();
 		if(vehicle instanceof Car) {
 			activeCars--;			
 		} else if (vehicle instanceof Sled) {
