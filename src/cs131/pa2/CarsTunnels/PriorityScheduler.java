@@ -2,6 +2,7 @@ package cs131.pa2.CarsTunnels;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
@@ -12,11 +13,14 @@ import cs131.pa2.Abstract.Vehicle;
 
 public class PriorityScheduler extends Tunnel{
 	private final Lock lock = new ReentrantLock(); 
-	public Queue<Tunnel> TunnelList = new PriorityQueue();
 	
-	private int Cars = 0;
-	private int Sleds = 0;
-	private int Amberlamps = 0;
+	public Collection<Tunnel> TunnelList = new LinkedList();
+	
+	public Collection<Vehicle> waitingVehicles = new PriorityQueue();
+	
+	int maxWaitingPriority = 0;
+	
+
 	
 	
 
@@ -27,26 +31,26 @@ public class PriorityScheduler extends Tunnel{
 
 	@Override
 	public synchronized boolean tryToEnterInner(Vehicle vehicle) {
-		lock.lock();
-		Boolean result = false;
 		
 		int vPrio = vehicle.getPriority();
-		Iterator<Tunnel> i = TunnelList.iterator();
-		Tunnel temp = i.next();
-		while (i.hasNext()) {
-			if(temp instanceof BasicTunnel) {
-				if(((BasicTunnel)temp).Priority < vPrio) {
-					result = ((BasicTunnel) i).tryToEnterInner(vehicle);
-				}
+		if (vPrio < maxWaitingPriority) {
+			//vehicle.wait();
+			waitingVehicles.add(vehicle);
+			return false;
+		} else {
+			for(Tunnel tunnel: TunnelList) {
+				if(tunnel.tryToEnterInner(vehicle)) {
+					return true;
+				} 
 			}
-			temp = i.next();
-		} 
+			maxWaitingPriority = vehicle.getPriority();
+			//vehicle.wait()
+			waitingVehicles.add(vehicle);
+			return false;
+		}
 		
-		if (result) {
-			lock.unlock();
-			return result;
-		} 
-	
+		
+		
 		/*
 		 * Check priority of every tunnel.
 		 * If one of the tunnels has a priority =< the vehicles priority, call TargetTunnel.tryToEnterInner(true) then return true.
@@ -54,14 +58,11 @@ public class PriorityScheduler extends Tunnel{
 		 * When a tunnel empties, reset it's priority and wake all vehicles.
 		 */
 		
-		
-		
-		
-		return false;
 	}
 
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
+		
 		exitTunnelInner(vehicle);	
 		Iterator<Tunnel> i = TunnelList.iterator();
 		Tunnel temp = i.next();
