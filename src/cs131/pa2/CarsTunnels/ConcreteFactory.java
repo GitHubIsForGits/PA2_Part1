@@ -17,17 +17,17 @@ public class ConcreteFactory implements Factory {
 
     @Override
     public Vehicle createNewCar(String label, Direction direction){
-    		return new Car(label, direction);
+    	return new Car(label, direction);
     }
 
     @Override
     public Vehicle createNewSled(String label, Direction direction){
-    		return new Sled(label, direction);    
+    	return new Sled(label, direction);    
     }
 
     @Override
     public Tunnel createNewPriorityScheduler(String label, Collection<Tunnel> tunnels, Log log){
-    		throw new UnsupportedOperationException("Not supported yet.");
+    	return new PriorityScheduler(label, tunnels);
     }
 
 	@Override

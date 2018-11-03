@@ -11,9 +11,10 @@ public class BasicTunnel extends Tunnel{
 	
 	private String dir = null; //Variable to check direction
 	
+	public int Priority = 0; //Added for Part 2.
 	
-	private int activeCars;//Car count
-	private int activeSled;//Sled count
+	int activeCars;//Car count
+	int activeSled;//Sled count
 	
 	
 	private boolean carsShouldPass() {//Returns true if cars should pass this tunnel
@@ -71,18 +72,15 @@ public class BasicTunnel extends Tunnel{
 	@Override
 	public synchronized void exitTunnelInner(Vehicle vehicle) {//Reset direction if tunnel is empty, and also exit vehicles.
 		lock.lock();
-		try {
-			if(vehicle instanceof Car) {
-				activeCars--;			
-			} else if (vehicle instanceof Sled) {
-				activeSled--;	
-			}
-			if (activeCars + activeSled == 0) {
-				dir = null;
-			}
-		} finally {
-			lock.unlock();
-			return;
+		if(vehicle instanceof Car) {
+			activeCars--;			
+		} else if (vehicle instanceof Sled) {
+			activeSled--;	
+		}
+		
+		
+		if (activeCars + activeSled == 0) {
+			dir = null;
 		}
 	}
 	
