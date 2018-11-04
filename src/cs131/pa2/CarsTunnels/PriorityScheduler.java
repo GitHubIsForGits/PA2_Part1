@@ -11,11 +11,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import cs131.pa2.Abstract.Tunnel;
 import cs131.pa2.Abstract.Vehicle;
+import javafx.util.Pair;
 
 public class PriorityScheduler extends Tunnel{
 	private final Lock lock = new ReentrantLock(); 
 	private final Condition prioCond = lock.newCondition();
 	
+	public Collection<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new LinkedList();
 	public Collection<Tunnel> TunnelList = new LinkedList();
 	
 	int maxWaitingPriority = 0;
@@ -29,30 +31,39 @@ public class PriorityScheduler extends Tunnel{
 
 	public PriorityScheduler(String name, Collection<Tunnel> c) {
 		super(name);
-		TunnelList = (Queue<Tunnel>)c;
+		TunnelList = (LinkedList<Tunnel>)c;
 	}
 
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
-		//lock.lock();
-		
-		while(true) {
+		lock.lock();
+		boolean result = false;
+		try {
 			while (gottaWait(vehicle)) {
 				try {
 					prioCond.await();
 				} catch (InterruptedException e) {} 
 			}
+		} finally {
+			lock.unlock();
+			return result;
+		}
+		while(true) {
+			
 			for(Tunnel tunnel: TunnelList) {
 				if(tunnel.tryToEnterInner(vehicle)) {
+					TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
 					return true;
-				} 
-			}
-			maxWaitingPriority = vehicle.getPriority();
-			try {
-				prioCond.await();
-			} catch (InterruptedException e) {}
-			
+				}
+					
+			} 
 		}
+		maxWaitingPriority = vehicle.getPriority();
+		try {
+			prioCond.await();
+		} catch (InterruptedException e) {}
+			
+	}
 		
 		
 		
@@ -66,11 +77,19 @@ public class PriorityScheduler extends Tunnel{
 		 * When a tunnel empties, reset it's priority and wake all vehicles.
 		 */
 		
-	}
+	
+	
+	
+	
+	
+	
+	
+	
 
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
-		//lock.lock();
+		lock.lock();
+		try {
 		//exitTunnelInner(vehicle) on basictunnel
 		prioCond.signalAll();
 		maxWaitingPriority = vehicle.getPriority();
