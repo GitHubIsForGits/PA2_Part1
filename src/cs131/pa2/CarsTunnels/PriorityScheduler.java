@@ -15,9 +15,10 @@ import javafx.util.Pair;
 
 public class PriorityScheduler extends Tunnel{
 	private final Lock lock = new ReentrantLock(); 
-	private final Condition prioCond = lock.newCondition();
+	private final Condition prioCond = lock.newCondition();//vehicle was at the highest priority
+	private final Condition lowPrioCond = lock.newCondition();
 	
-	public Collection<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new LinkedList();
+	public LinkedList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new LinkedList();
 	public Collection<Tunnel> TunnelList = new LinkedList();
 	
 	int maxWaitingPriority = 0;
@@ -39,28 +40,31 @@ public class PriorityScheduler extends Tunnel{
 		lock.lock();
 		boolean result = false;
 		try {
-			while (gottaWait(vehicle)) {
+			while(!gottaWait(vehicle)) {
+				for(Tunnel tunnel: TunnelList) {
+					if(tunnel.tryToEnterInner(vehicle)) {
+						TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+						return true;	
+					}	
+				}
 				try {
 					prioCond.await();
-				} catch (InterruptedException e) {} 
+					} catch (InterruptedException e) {} 
 			}
+
 			
-			for(Tunnel tunnel: TunnelList) {
-				if(tunnel.tryToEnterInner(vehicle)) {
-					TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
-					return true;
-				}
+			if(gottaWait(vehicle)) {
+				try {
+					prioCond.await();
+					} catch (InterruptedException e) {}
+			}
 				
-			} 
 			
-			
-			
-		} finally {
-			lock.unlock();
-			return result;
-		}
-		
-			
+			} finally {
+				lock.unlock();
+				return result;
+			}
+				
 	}
 		
 		
@@ -87,13 +91,24 @@ public class PriorityScheduler extends Tunnel{
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
 		lock.lock();
+		boolean removedSomething = false;
 		try {
-			//exitTunnelInner(vehicle) on basictunnel
-			prioCond.signalAll();
-			maxWaitingPriority = vehicle.getPriority();
-		} finally {
-			
-		}
+			for(Pair<Vehicle, Tunnel> pairs: TunnelAndVehicle) {
+				if(pairs.getKey().equals(vehicle)) {
+					removedSomething = true;
+					pairs.getValue().exitTunnel(vehicle);
+					TunnelAndVehicle.removeFirstOccurrence(pairs);		
+				}
+			}
+			if (removedSomething) {
+				prioCond.signalAll();
+			} else {
+				//Something went wrong.
+			}
+
+			} finally {
+				lock.unlock();
+			}
 		
 	}
 	
