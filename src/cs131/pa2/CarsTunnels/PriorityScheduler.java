@@ -21,6 +21,7 @@ public class PriorityScheduler extends Tunnel{
 	public LinkedList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new LinkedList();
 	public Collection<Tunnel> TunnelList = new LinkedList();
 	
+	
 	int maxWaitingPriority = 0;
 	
 	Boolean gottaWait(Vehicle vehicle) {
@@ -39,31 +40,44 @@ public class PriorityScheduler extends Tunnel{
 	public boolean tryToEnterInner(Vehicle vehicle) {
 		lock.lock();
 		boolean result = false;
-		try {
-			while(!gottaWait(vehicle)) {
-				for(Tunnel tunnel: TunnelList) {
-					if(tunnel.tryToEnterInner(vehicle)) {
-						TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
-						return true;	
-					}	
-				}
-				try {
-					prioCond.await();
-					} catch (InterruptedException e) {} 
+		if(vehicle.getPriority() >= maxWaitingPriority) {
+			for(Tunnel tunnel: TunnelList) {
+				if(tunnel.tryToEnterInner(vehicle)) {
+					TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+					return true;	
+				}	
 			}
-
+			try {
+				maxWaitingPriority = vehicle.getPriority();
+				prioCond.await();
+			} catch (InterruptedException e) {}
+		}
+		
+		
+		
+		/*
+		 * while(!gottaWait(vehicle)) {
+		 * for(Tunnel tunnel: TunnelList) {
+				if(tunnel.tryToEnterInner(vehicle)) {
+					TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+					return true;	
+				}	
+			}
+			try {
+				prioCond.await();
+			} catch (InterruptedException e) {} 
+		}
+		 */
 			
-			if(gottaWait(vehicle)) {
-				try {
-					prioCond.await();
-					} catch (InterruptedException e) {}
-			}
+		while(gottaWait(vehicle)) {
+			try {
+				prioCond.await();
+			} catch (InterruptedException e) {}
+		}
 				
-			
-			} finally {
-				lock.unlock();
-				return result;
-			}
+
+		lock.unlock();
+		return result;
 				
 	}
 		
