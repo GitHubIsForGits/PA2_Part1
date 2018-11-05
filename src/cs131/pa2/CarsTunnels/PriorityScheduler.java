@@ -109,12 +109,13 @@ public class PriorityScheduler extends Tunnel{
 		lock.lock();
 		boolean removedSomething = false;
 		try {
-			for(Pair<Vehicle, Tunnel> pairs: TunnelAndVehicle) {
-				if(pairs.getKey().equals(vehicle)) {
+			Iterator<Pair<Vehicle, Tunnel>> iter = TunnelAndVehicle.iterator();
+			while(iter.hasNext()) {
+				if(((Pair<Vehicle, Tunnel>) iter).getKey().equals(vehicle)) {
 					removedSomething = true;
-					pairs.getValue().exitTunnel(vehicle);
+					((Pair<Vehicle, Tunnel>) iter).getValue().exitTunnel(vehicle);
 					maxPrioList.remove(vehicle);
-					TunnelAndVehicle.remove(pairs);		
+					TunnelAndVehicle.remove(iter);		
 				}
 			}
 			if(maxPrioList.size() == 0) {
