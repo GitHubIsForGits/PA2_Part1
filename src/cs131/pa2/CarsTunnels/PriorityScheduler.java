@@ -16,28 +16,49 @@ import javafx.util.Pair;
 
 public class PriorityScheduler extends Tunnel{
 	private final Lock enterLock = new ReentrantLock(); 
+	private final Condition prioCond = enterLock.newCondition();
 	
-	private final Lock exitLock = new ReentrantLock();
 	private final Lock pairLock = new ReentrantLock();
-	
-	
-	private final Condition prioCond = enterLock.newCondition();//vehicle was at the highest priority
-	private final Condition lowPrioCond = enterLock.newCondition();
-	
 	public ArrayList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new ArrayList();
+	
+	private final Lock prioListLock = new ReentrantLock();
+	public ArrayList<Vehicle> prioWait = new ArrayList();
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
 	public Collection<Tunnel> TunnelList = new ArrayList();
-	public Collection<Vehicle> maxPrioList = new PriorityQueue();
+
 	
 	int maxWaitingPriority = 0;
 	
-	Boolean gottaWait(Vehicle vehicle) {
+	public boolean gottaWait(Vehicle vehicle) {
 		return (vehicle.getPriority() < maxWaitingPriority);
+	}
+	
+	public boolean onWaitingList(Vehicle vehicle) {
+		boolean answer = false;
+		prioListLock.lock();
+		try {
+			answer = prioWait.contains(vehicle);
+		} finally {
+			prioListLock.unlock();
+			return answer;
+		}
 	}
 
 	
 	
+	
 
-	public PriorityScheduler(String name, Collection<Tunnel> c) {
+	PriorityScheduler(String name, Collection<Tunnel> c) {
 		super(name);
 		TunnelList = (ArrayList<Tunnel>)c;
 	}
@@ -45,28 +66,36 @@ public class PriorityScheduler extends Tunnel{
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
 		enterLock.lock();
+		boolean entered = false;
 		try {
-			if(vehicle.getPriority() >= maxWaitingPriority) {
-				for(Tunnel tunnel: TunnelList) {
-					if(tunnel.tryToEnterInner(vehicle)) {
+			while(!entered) {
+				while(onWaitingList(vehicle)&&!entered){
+					try {
 						pairLock.lock();
-						TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+						for(Tunnel tunnel: TunnelList) {
+							if(tunnel.tryToEnterInner(vehicle)) {
+								TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+								entered = true;
+							}
+						}
+					} finally {
 						pairLock.unlock();
-						enterLock.unlock();
-						return true;	
 					}
+					try {
+						prioCond.await();
+					} catch (InterruptedException e) {}
 				}
-			try {
-				maxWaitingPriority = vehicle.getPriority();
-				maxPrioList.add(vehicle);
-				System.out.println("waiting on priority" + maxWaitingPriority);
-				prioCond.await();
-				} catch (InterruptedException e) {}
-			}	
-		} finally {
-			enterLock.unlock();
-			return true;
-		}
+				
+				/*
+				 * What to do if you werent on waiting list.
+				 */
+				
+			}
+			
+			} finally {
+				enterLock.unlock();
+				return entered;
+			}
 	}
 		
 		
