@@ -18,8 +18,8 @@ public class PriorityScheduler extends Tunnel{
 	private final Lock enterLock = new ReentrantLock(); 
 	
 	private final Lock exitLock = new ReentrantLock();
-	private final Condition prioCond = lock.newCondition();//vehicle was at the highest priority
-	private final Condition lowPrioCond = lock.newCondition();
+	private final Condition prioCond = enterLock.newCondition();//vehicle was at the highest priority
+	private final Condition lowPrioCond = enterLock.newCondition();
 	
 	public ArrayList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new ArrayList();
 	public Collection<Tunnel> TunnelList = new ArrayList();
