@@ -20,7 +20,7 @@ public class PriorityScheduler extends Tunnel{
 	
 	public LinkedList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new LinkedList();
 	public Collection<Tunnel> TunnelList = new LinkedList();
-	
+	public Collection<Vehicle> maxPrioList = new PriorityQueue();
 	
 	int maxWaitingPriority = 0;
 	
@@ -49,6 +49,7 @@ public class PriorityScheduler extends Tunnel{
 			}
 			try {
 				maxWaitingPriority = vehicle.getPriority();
+				maxPrioList.add(vehicle);
 				prioCond.await();
 			} catch (InterruptedException e) {}
 		}
@@ -111,6 +112,7 @@ public class PriorityScheduler extends Tunnel{
 				if(pairs.getKey().equals(vehicle)) {
 					removedSomething = true;
 					pairs.getValue().exitTunnel(vehicle);
+					maxPrioList.remove(vehicle);
 					TunnelAndVehicle.removeFirstOccurrence(pairs);		
 				}
 			}
