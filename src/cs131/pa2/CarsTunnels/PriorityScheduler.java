@@ -18,6 +18,7 @@ public class PriorityScheduler extends Tunnel{
 	private final Lock enterLock = new ReentrantLock(); 
 	
 	private final Lock exitLock = new ReentrantLock();
+	private final Lock pairLock = new ReentrantLock();
 	private final Condition prioCond = enterLock.newCondition();//vehicle was at the highest priority
 	private final Condition lowPrioCond = enterLock.newCondition();
 	
@@ -49,7 +50,9 @@ public class PriorityScheduler extends Tunnel{
 			if(vehicle.getPriority() >= maxWaitingPriority) {
 				for(Tunnel tunnel: TunnelList) {
 					if(tunnel.tryToEnterInner(vehicle)) {
+						pairLock.lock();
 						TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+						pairLock.unlock();
 						return true;	
 					}	
 				}
@@ -118,10 +121,12 @@ public class PriorityScheduler extends Tunnel{
 			while(iter.hasNext()) {
 				Pair<Vehicle, Tunnel> bingo = iter.next();
 				if(bingo.getKey().equals(vehicle)) {
+					pairLock.lock();
 					removedSomething = true;
 					bingo.getValue().exitTunnel(vehicle);
 					maxPrioList.remove(vehicle);
-					TunnelAndVehicle.remove(bingo);		
+					TunnelAndVehicle.remove(bingo);	
+					pairLock.unlock();
 				}
 			}
 			if(maxPrioList.size() == 0) {
