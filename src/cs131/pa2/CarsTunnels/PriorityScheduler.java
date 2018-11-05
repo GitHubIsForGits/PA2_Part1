@@ -19,6 +19,8 @@ public class PriorityScheduler extends Tunnel{
 	
 	private final Lock exitLock = new ReentrantLock();
 	private final Lock pairLock = new ReentrantLock();
+	
+	
 	private final Condition prioCond = enterLock.newCondition();//vehicle was at the highest priority
 	private final Condition lowPrioCond = enterLock.newCondition();
 	
@@ -52,50 +54,18 @@ public class PriorityScheduler extends Tunnel{
 						pairLock.unlock();
 						enterLock.unlock();
 						return true;	
-					}	
+					}
 				}
 			try {
 				maxWaitingPriority = vehicle.getPriority();
 				maxPrioList.add(vehicle);
 				System.out.println("waiting on priority" + maxWaitingPriority);
 				prioCond.await();
-<<<<<<< HEAD
 				} catch (InterruptedException e) {}
-			}
-=======
-			} catch (InterruptedException e) {}
-		}
-			System.out.println("My priority" + vehicle.getPriority() + " Waiting priority" + maxWaitingPriority);
->>>>>>> branch 'master' of https://github.com/GitHubIsForGits/PA2_Part1.git
-		
-		
-		
-		/*
-		 * while(!gottaWait(vehicle)) {
-		 * for(Tunnel tunnel: TunnelList) {
-				if(tunnel.tryToEnterInner(vehicle)) {
-					TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
-					return true;	
-				}	
-			}
-			try {
-				prioCond.await();
-			} catch (InterruptedException e) {} 
-		}
-			
-			while(gottaWait(vehicle)) {
-				try {
-					prioCond.await();
-				} catch (InterruptedException e) {}
-			} */
-			
-			
-			
-			
-			
+			}	
 		} finally {
 			enterLock.unlock();
-			return false;
+			return true;
 		}
 	}
 		
