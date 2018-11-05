@@ -59,9 +59,11 @@ public class PriorityScheduler extends Tunnel{
 			try {
 				maxWaitingPriority = vehicle.getPriority();
 				maxPrioList.add(vehicle);
+				System.out.println("waiting on priority" + maxWaitingPriority);
 				prioCond.await();
 			} catch (InterruptedException e) {}
 		}
+			System.out.println("My priority" + vehicle.getPriority() + " Waiting priority" + maxWaitingPriority);
 		
 		
 		
@@ -119,6 +121,7 @@ public class PriorityScheduler extends Tunnel{
 		try {
 			Iterator <Pair<Vehicle, Tunnel>> iter = TunnelAndVehicle.iterator();
 			while(iter.hasNext()) {
+				System.out.println("Stuck in iterator loop");
 				Pair<Vehicle, Tunnel> bingo = iter.next();
 				if(bingo.getKey().equals(vehicle)) {
 					pairLock.lock();
