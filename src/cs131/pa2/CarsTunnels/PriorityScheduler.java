@@ -25,14 +25,6 @@ public class PriorityScheduler extends Tunnel{
 	public ArrayList<Vehicle> prioWait = new ArrayList();
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
 
 	public Collection<Tunnel> TunnelList = new ArrayList();
 
@@ -53,8 +45,6 @@ public class PriorityScheduler extends Tunnel{
 			return answer;
 		}
 	}
-
-	
 	
 	
 
@@ -69,9 +59,12 @@ public class PriorityScheduler extends Tunnel{
 		boolean entered = false;
 		try {
 			while(!entered) {
-				while(onWaitingList(vehicle)&&!entered){
+				
+				
+				//If your cool enough to go right in
+				if (!gottaWait(vehicle)&&!entered&&!onWaitingList(vehicle)) {
+					pairLock.lock();
 					try {
-						pairLock.lock();
 						for(Tunnel tunnel: TunnelList) {
 							if(tunnel.tryToEnterInner(vehicle)) {
 								TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
@@ -81,74 +74,73 @@ public class PriorityScheduler extends Tunnel{
 					} finally {
 						pairLock.unlock();
 					}
+					if(!entered) {
+						prioListLock.lock();
+						try {
+							prioWait.add(vehicle);
+						} finally {
+							prioListLock.unlock();
+						}
+					}
+				} else if (onWaitingList(vehicle)&&!entered){
+					pairLock.lock();
 					try {
-						prioCond.await();
-					} catch (InterruptedException e) {}
+						for(Tunnel tunnel: TunnelList) {
+							if(tunnel.tryToEnterInner(vehicle)) {
+								prioListLock.lock();
+								try {
+									prioWait.remove(vehicle);
+									} finally {
+										if(prioWait.isEmpty()) {
+											maxWaitingPriority = 0;
+										}
+										prioListLock.unlock();
+									}
+								TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+								entered = true;
+							}
+						}
+					} finally {
+						pairLock.unlock();
+					}
 				}
-				
-				/*
-				 * What to do if you werent on waiting list.
-				 */
+
+				prioCond.await();
 				
 			}
 			
-			} finally {
-				enterLock.unlock();
-				return entered;
-			}
+		} finally {
+			enterLock.unlock();
+			return entered;
+		}
 	}
-		
-		
-		
-		
-		
-		
-		/*
-		 * Check priority of every tunnel.
-		 * If one of the tunnels has a priority =< the vehicles priority, call TargetTunnel.tryToEnterInner(true) then return true.
-		 * If all the tunnels are high priority, make the vehicle wait
-		 * When a tunnel empties, reset it's priority and wake all vehicles.
-		 */
-		
-	
-	
-	
-	
-	
-	
-	
 	
 
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
-		exitLock.lock();
 		boolean removedSomething = false;
+		pairLock.lock();
 		try {
 			Iterator <Pair<Vehicle, Tunnel>> iter = TunnelAndVehicle.iterator();
 			while(iter.hasNext()) {
 				System.out.println("Stuck in iterator loop");
 				Pair<Vehicle, Tunnel> bingo = iter.next();
 				if(bingo.getKey().equals(vehicle)) {
-					pairLock.lock();
 					removedSomething = true;
 					bingo.getValue().exitTunnel(vehicle);
-					maxPrioList.remove(vehicle);
 					TunnelAndVehicle.remove(bingo);	
-					pairLock.unlock();
 				}
 			}
-			if(maxPrioList.size() == 0) {
-				maxWaitingPriority--;
-			}
+
 			if (removedSomething) {
 				prioCond.signalAll();
 			} else {
 				//Something went wrong.
 			}
 
-			} finally {
-				exitLock.unlock();
-			}
+		} finally {
+			pairLock.unlock();
+		}
 		
 	}
 	
