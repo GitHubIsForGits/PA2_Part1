@@ -44,15 +44,13 @@ public class PriorityScheduler extends Tunnel{
 	public boolean tryToEnterInner(Vehicle vehicle) {
 		enterLock.lock();
 		try {
-		
-
-			boolean result = false;
 			if(vehicle.getPriority() >= maxWaitingPriority) {
 				for(Tunnel tunnel: TunnelList) {
 					if(tunnel.tryToEnterInner(vehicle)) {
 						pairLock.lock();
 						TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
 						pairLock.unlock();
+						enterLock.unlock();
 						return true;	
 					}	
 				}
@@ -60,8 +58,8 @@ public class PriorityScheduler extends Tunnel{
 				maxWaitingPriority = vehicle.getPriority();
 				maxPrioList.add(vehicle);
 				prioCond.await();
-			} catch (InterruptedException e) {}
-		}
+				} catch (InterruptedException e) {}
+			}
 		
 		
 		
@@ -77,14 +75,17 @@ public class PriorityScheduler extends Tunnel{
 				prioCond.await();
 			} catch (InterruptedException e) {} 
 		}
-		 */
 			
 			while(gottaWait(vehicle)) {
 				try {
 					prioCond.await();
 				} catch (InterruptedException e) {}
-			}
-				
+			} */
+			
+			
+			
+			
+			
 		} finally {
 			enterLock.unlock();
 			return false;
