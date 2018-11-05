@@ -116,6 +116,9 @@ public class PriorityScheduler extends Tunnel{
 					TunnelAndVehicle.removeFirstOccurrence(pairs);		
 				}
 			}
+			if(maxPrioList.size() == 0) {
+				maxWaitingPriority--;
+			}
 			if (removedSomething) {
 				prioCond.signalAll();
 			} else {
