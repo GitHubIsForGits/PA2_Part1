@@ -15,7 +15,9 @@ import cs131.pa2.Abstract.Vehicle;
 import javafx.util.Pair;
 
 public class PriorityScheduler extends Tunnel{
-	private final Lock lock = new ReentrantLock(); 
+	private final Lock enterLock = new ReentrantLock(); 
+	
+	private final Lock exitLock = new ReentrantLock();
 	private final Condition prioCond = lock.newCondition();//vehicle was at the highest priority
 	private final Condition lowPrioCond = lock.newCondition();
 	
@@ -39,15 +41,18 @@ public class PriorityScheduler extends Tunnel{
 
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
-		lock.lock();
-		boolean result = false;
-		if(vehicle.getPriority() >= maxWaitingPriority) {
-			for(Tunnel tunnel: TunnelList) {
-				if(tunnel.tryToEnterInner(vehicle)) {
-					TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
-					return true;	
-				}	
-			}
+		enterLock.lock();
+		try {
+		
+
+			boolean result = false;
+			if(vehicle.getPriority() >= maxWaitingPriority) {
+				for(Tunnel tunnel: TunnelList) {
+					if(tunnel.tryToEnterInner(vehicle)) {
+						TunnelAndVehicle.add(new Pair<Vehicle, Tunnel>(vehicle, tunnel));
+						return true;	
+					}	
+				}
 			try {
 				maxWaitingPriority = vehicle.getPriority();
 				maxPrioList.add(vehicle);
@@ -71,16 +76,16 @@ public class PriorityScheduler extends Tunnel{
 		}
 		 */
 			
-		while(gottaWait(vehicle)) {
-			try {
-				prioCond.await();
-			} catch (InterruptedException e) {}
+			while(gottaWait(vehicle)) {
+				try {
+					prioCond.await();
+				} catch (InterruptedException e) {}
+			}
+				
+		} finally {
+			enterLock.unlock();
+			return false;
 		}
-				
-
-		lock.unlock();
-		return result;
-				
 	}
 		
 		
@@ -106,7 +111,7 @@ public class PriorityScheduler extends Tunnel{
 
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
-		lock.lock();
+		exitLock.lock();
 		boolean removedSomething = false;
 		try {
 			Iterator <Pair<Vehicle, Tunnel>> iter = TunnelAndVehicle.iterator();
@@ -129,7 +134,7 @@ public class PriorityScheduler extends Tunnel{
 			}
 
 			} finally {
-				lock.unlock();
+				exitLock.unlock();
 			}
 		
 	}
