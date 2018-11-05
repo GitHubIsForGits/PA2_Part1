@@ -34,7 +34,7 @@ public class PriorityScheduler extends Tunnel{
 
 	public PriorityScheduler(String name, Collection<Tunnel> c) {
 		super(name);
-		TunnelList = (LinkedList<Tunnel>)c;
+		TunnelList = (ArrayList<Tunnel>)c;
 	}
 
 	@Override
@@ -114,7 +114,7 @@ public class PriorityScheduler extends Tunnel{
 					removedSomething = true;
 					pairs.getValue().exitTunnel(vehicle);
 					maxPrioList.remove(vehicle);
-					TunnelAndVehicle.removeFirstOccurrence(pairs);		
+					TunnelAndVehicle.remove(pairs);		
 				}
 			}
 			if(maxPrioList.size() == 0) {
