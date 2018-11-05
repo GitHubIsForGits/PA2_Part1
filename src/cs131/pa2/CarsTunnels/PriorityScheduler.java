@@ -1,5 +1,6 @@
 package cs131.pa2.CarsTunnels;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -18,8 +19,8 @@ public class PriorityScheduler extends Tunnel{
 	private final Condition prioCond = lock.newCondition();//vehicle was at the highest priority
 	private final Condition lowPrioCond = lock.newCondition();
 	
-	public LinkedList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new LinkedList();
-	public Collection<Tunnel> TunnelList = new LinkedList();
+	public ArrayList<Pair<Vehicle, Tunnel>> TunnelAndVehicle = new ArrayList();
+	public Collection<Tunnel> TunnelList = new ArrayList();
 	public Collection<Vehicle> maxPrioList = new PriorityQueue();
 	
 	int maxWaitingPriority = 0;
