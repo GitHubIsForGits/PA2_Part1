@@ -94,7 +94,7 @@ public class PriorityScheduler extends Tunnel{
 							prioLock.unlock();
 						}
 					}
-				} else if (onWaitingList(vehicle)&&!entered){
+				} else if (onWaitingList(vehicle)&&!entered&&!gottaWait(vehicle)){
 					TunnelLock.lock();
 					try {
 						Iterator it = tunnelList.entrySet().iterator();
