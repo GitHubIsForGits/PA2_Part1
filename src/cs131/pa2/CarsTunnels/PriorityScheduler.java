@@ -96,7 +96,7 @@ public class PriorityScheduler extends Tunnel{
 							prioLock.writeLock().unlock();
 						}
 					}
-				} else if (onWaitingList(vehicle)&&!entered&&!gottaWait(vehicle)){
+				} else if (onWaitingList(vehicle)&&!entered){
 					TunnelLock.readLock().lock();
 					try {
 						Iterator it = tunnelList.entrySet().iterator();
@@ -156,22 +156,19 @@ public class PriorityScheduler extends Tunnel{
 		try {
 			Iterator iter = VehicleAndTunnel.entrySet().iterator();
 			while(iter.hasNext()) {
-				System.out.println("Stuck in iterator loop");
 				Map.Entry<Vehicle, Tunnel> bingo = (Map.Entry<Vehicle, Tunnel>)iter.next();
+				System.out.println(bingo.toString());
 				if(bingo.getKey().equals(vehicle)) {
 					removedSomething = true;
 					bingo.getValue().exitTunnel(vehicle);
-					VehicleAndTunnel.remove(bingo.getKey(), bingo.getValue());	
+					iter.remove();	
+					System.out.println("FRIENDSHIP ENDED WITH" + bingo.toString() );
 				}
 			}
 
-			if (removedSomething) {
-				prioCond.signal();
-			} else {
-				//Something went wrong.
-			}
 
 		} finally {
+			if (removedSomething) {prioCond.signalAll();}
 			enterLock.unlock();
 			VTLock.writeLock().unlock();
 		}
