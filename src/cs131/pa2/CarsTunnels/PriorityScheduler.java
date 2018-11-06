@@ -20,14 +20,13 @@ import javafx.util.Pair;
 public class PriorityScheduler extends Tunnel{
 	private final Lock enterLock = new ReentrantLock(); 
 	private final Condition prioCond = enterLock.newCondition();
-	
+	private final Lock exitLock = new ReentrantLock();
+		
 	private final Lock VTLock = new ReentrantLock();
 	public HashMap<Vehicle, Tunnel> VehicleAndTunnel = new HashMap();
 	
 	private final Lock prioLock = new ReentrantLock();
 	public ArrayList<Vehicle> prioWait = new ArrayList();
-	
-	
 
 	public HashMap<Tunnel, Lock> tunnelList = new HashMap<Tunnel, Lock>();
 	private final Lock TunnelLock = new ReentrantLock();
@@ -67,7 +66,7 @@ public class PriorityScheduler extends Tunnel{
 			while(!entered) {
 				//If your cool enough to go right in
 				if (!gottaWait(vehicle)&&!entered&&!onWaitingList(vehicle)) {
-					VTLock.lock();
+					TunnelLock.lock();
 					try {
 						Iterator it = tunnelList.entrySet().iterator();
 						while (it.hasNext()) {
@@ -84,8 +83,9 @@ public class PriorityScheduler extends Tunnel{
 							}
 						}
 					} finally {
-						VTLock.unlock();
+						TunnelLock.unlock();
 					}
+					//If you didn't enter, go into 
 					if(!entered) {
 						prioLock.lock();
 						try {
@@ -130,8 +130,11 @@ public class PriorityScheduler extends Tunnel{
 					}
 	
 				}
-
-				prioCond.await();
+				
+				if (!entered) {
+					prioCond.await();
+				}
+				
 				
 			}
 			
@@ -145,6 +148,7 @@ public class PriorityScheduler extends Tunnel{
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
 		boolean removedSomething = false;
+		exitLock.lock();
 		VTLock.lock();
 		try {
 			Iterator iter = VehicleAndTunnel.entrySet().iterator();
@@ -166,6 +170,7 @@ public class PriorityScheduler extends Tunnel{
 
 		} finally {
 			VTLock.unlock();
+			exitLock.lock();
 		}
 		
 	}
