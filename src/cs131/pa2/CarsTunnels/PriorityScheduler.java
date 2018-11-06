@@ -151,6 +151,7 @@ public class PriorityScheduler extends Tunnel{
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
 		boolean removedSomething = false;
+		enterLock.lock();
 		VTLock.writeLock().lock();
 		try {
 			Iterator iter = VehicleAndTunnel.entrySet().iterator();
@@ -165,12 +166,13 @@ public class PriorityScheduler extends Tunnel{
 			}
 
 			if (removedSomething) {
-				prioCond.signalAll();
+				prioCond.signal();
 			} else {
 				//Something went wrong.
 			}
 
 		} finally {
+			enterLock.unlock();
 			VTLock.writeLock().unlock();
 		}
 		
