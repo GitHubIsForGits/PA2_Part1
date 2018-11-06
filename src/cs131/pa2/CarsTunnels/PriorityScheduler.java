@@ -167,9 +167,8 @@ public class PriorityScheduler extends Tunnel{
 							if(pair.getKey().equals(bingo.getValue())) {
 								pair.getValue().lock();
 								try {
-									iter.remove();
+									bingo.getValue().exitTunnel(bingo.getKey());
 									removedSomething = true;
-									pair.getKey().exitTunnel(vehicle);
 									System.out.println("FRIENDSHIP ENDED WITH" + bingo.toString() );
 								} finally {
 									pair.getValue().unlock();
@@ -177,6 +176,7 @@ public class PriorityScheduler extends Tunnel{
 							}
 						}
 					} finally {
+						iter.remove();
 						TunnelLock.writeLock().unlock();							
 					}
 				}
