@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import cs131.pa2.Abstract.Tunnel;
 import cs131.pa2.Abstract.Vehicle;
@@ -20,16 +21,16 @@ import javafx.util.Pair;
 public class PriorityScheduler extends Tunnel{
 	private final Lock enterLock = new ReentrantLock(); 
 	private final Condition prioCond = enterLock.newCondition();
-	private final Lock exitLock = new ReentrantLock();
 		
-	private final Lock VTLock = new ReentrantLock();
+	private final ReentrantReadWriteLock VTLock = new ReentrantReadWriteLock();
 	public HashMap<Vehicle, Tunnel> VehicleAndTunnel = new HashMap();
 	
-	private final Lock prioLock = new ReentrantLock();
+	private final ReentrantReadWriteLock prioLock = new ReentrantReadWriteLock();
 	public ArrayList<Vehicle> prioWait = new ArrayList();
-
+	
+	private final ReentrantReadWriteLock TunnelLock = new ReentrantReadWriteLock();
 	public HashMap<Tunnel, Lock> tunnelList = new HashMap<Tunnel, Lock>();
-	private final Lock TunnelLock = new ReentrantLock();
+	
 
 	
 	int maxWaitingPriority = 0;
@@ -40,11 +41,11 @@ public class PriorityScheduler extends Tunnel{
 	
 	public boolean onWaitingList(Vehicle vehicle) {
 		boolean answer = false;
-		prioLock.lock();
+		prioLock.readLock().lock();
 		try {
 			answer = prioWait.contains(vehicle);
 		} finally {
-			prioLock.unlock();
+			prioLock.readLock().unlock();
 			return answer;
 		}
 	}
@@ -66,45 +67,46 @@ public class PriorityScheduler extends Tunnel{
 			while(!entered) {
 				//If your cool enough to go right in
 				if (!gottaWait(vehicle)&&!entered&&!onWaitingList(vehicle)) {
-					TunnelLock.lock();
+					TunnelLock.readLock().lock();
 					try {
 						Iterator it = tunnelList.entrySet().iterator();
 						while (it.hasNext()) {
 							Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)it.next();
 							pair.getValue().lock();
-							TunnelLock.lock();
+							VTLock.writeLock().lock();
 							try {
 								if(pair.getKey().tryToEnter(vehicle)) {
 									VehicleAndTunnel.put(vehicle, pair.getKey());
 									entered = true;
 								}		
 							} finally {
-								TunnelLock.unlock();
+								pair.getValue().unlock();
+								VTLock.writeLock().unlock();
 							}
 						}
 					} finally {
-						TunnelLock.unlock();
+						TunnelLock.readLock().unlock();
 					}
 					//If you didn't enter, go into 
 					if(!entered) {
-						prioLock.lock();
+						prioLock.writeLock().lock();
 						try {
 							prioWait.add(vehicle);
 						} finally {
-							prioLock.unlock();
+							prioLock.writeLock().unlock();
 						}
 					}
 				} else if (onWaitingList(vehicle)&&!entered&&!gottaWait(vehicle)){
-					TunnelLock.lock();
+					TunnelLock.readLock().lock();
 					try {
 						Iterator it = tunnelList.entrySet().iterator();
 						while (it.hasNext()) {
 							Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)it.next();
 							pair.getValue().lock();
-							VTLock.lock();
+							VTLock.writeLock().lock();
 							try {
 								if(pair.getKey().tryToEnter(vehicle)) {
-									prioLock.lock();
+									prioLock.writeLock().lock();
 									try {
 										prioWait.remove(vehicle);										
 									} finally {
@@ -115,18 +117,19 @@ public class PriorityScheduler extends Tunnel{
 											}
 										}
 										maxWaitingPriority = maxPrio;	
-										prioLock.unlock();
+										pair.getValue().lock();
+										prioLock.writeLock().unlock();
 									}
 									
 									VehicleAndTunnel.put(vehicle, pair.getKey());
 									entered = true;
 								}		
 							} finally {
-								VTLock.unlock();
+								VTLock.writeLock().unlock();
 							}
 						}
 					} finally {
-						TunnelLock.unlock();
+						TunnelLock.readLock().unlock();
 					}
 	
 				}
@@ -148,17 +151,16 @@ public class PriorityScheduler extends Tunnel{
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
 		boolean removedSomething = false;
-		exitLock.lock();
-		VTLock.lock();
+		VTLock.writeLock().lock();
 		try {
 			Iterator iter = VehicleAndTunnel.entrySet().iterator();
 			while(iter.hasNext()) {
 				System.out.println("Stuck in iterator loop");
-				Map.Entry<Tunnel, Vehicle> bingo = (Map.Entry<Tunnel, Vehicle>)iter.next();
-				if(bingo.getValue().equals(vehicle)) {
+				Map.Entry<Vehicle, Tunnel> bingo = (Map.Entry<Vehicle, Tunnel>)iter.next();
+				if(bingo.getKey().equals(vehicle)) {
 					removedSomething = true;
-					bingo.getKey().exitTunnel(vehicle);
-					VehicleAndTunnel.remove(bingo);	
+					bingo.getValue().exitTunnel(vehicle);
+					VehicleAndTunnel.remove(bingo.getKey(), bingo.getValue());	
 				}
 			}
 
@@ -169,8 +171,7 @@ public class PriorityScheduler extends Tunnel{
 			}
 
 		} finally {
-			VTLock.unlock();
-			exitLock.lock();
+			VTLock.writeLock().unlock();
 		}
 		
 	}
