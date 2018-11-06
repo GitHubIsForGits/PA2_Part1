@@ -27,7 +27,7 @@ public class ConcreteFactory implements Factory {
 
     @Override
     public Tunnel createNewPriorityScheduler(String label, Collection<Tunnel> tunnels, Log log){
-    	return new PriorityScheduler(label, tunnels);
+    	return new PriorityScheduler(label, tunnels, log);
     }
 
 	@Override
