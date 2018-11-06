@@ -19,8 +19,8 @@ import cs131.pa2.Abstract.Log.Log;
 import javafx.util.Pair;
 
 public class PriorityScheduler extends Tunnel{
-	private final Lock enterLock = new ReentrantLock(); 
-	private final Condition prioCond = enterLock.newCondition();
+	private final Lock lock = new ReentrantLock(); 
+	private final Condition prioCond = lock.newCondition();
 		
 	private final ReentrantReadWriteLock VTLock = new ReentrantReadWriteLock();
 	public HashMap<Vehicle, Tunnel> VehicleAndTunnel = new HashMap();
@@ -61,13 +61,13 @@ public class PriorityScheduler extends Tunnel{
 
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
-		enterLock.lock();
+		lock.lock();
 		boolean entered = false;
 		try {
 			while(!entered) {
 				//If your cool enough to go right in
 				if (!gottaWait(vehicle)&&!entered&&!onWaitingList(vehicle)) {
-					TunnelLock.readLock().lock();
+					TunnelLock.writeLock().lock();
 					try {
 						Iterator it = tunnelList.entrySet().iterator();
 						while (it.hasNext()) {
@@ -85,7 +85,7 @@ public class PriorityScheduler extends Tunnel{
 							}
 						}
 					} finally {
-						TunnelLock.readLock().unlock();
+						TunnelLock.writeLock().unlock();
 					}
 					//If you didn't enter, go into 
 					if(!entered) {
@@ -142,7 +142,7 @@ public class PriorityScheduler extends Tunnel{
 			}
 			
 		} finally {
-			enterLock.unlock();
+			lock.unlock();
 			return entered;
 		}
 	}
@@ -151,7 +151,7 @@ public class PriorityScheduler extends Tunnel{
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
 		boolean removedSomething = false;
-		enterLock.lock();
+		lock.lock();
 		VTLock.writeLock().lock();
 		try {
 			Iterator iter = VehicleAndTunnel.entrySet().iterator();
@@ -159,18 +159,32 @@ public class PriorityScheduler extends Tunnel{
 				Map.Entry<Vehicle, Tunnel> bingo = (Map.Entry<Vehicle, Tunnel>)iter.next();
 				System.out.println(bingo.toString());
 				if(bingo.getKey().equals(vehicle)) {
-					removedSomething = true;
-					bingo.getValue().exitTunnel(vehicle);
-					iter.remove();	
-					System.out.println("FRIENDSHIP ENDED WITH" + bingo.toString() );
+					TunnelLock.writeLock().lock();
+					try {
+						Iterator bitter = tunnelList.entrySet().iterator();
+						while (bitter.hasNext()) {
+							Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)bitter.next();
+							if(pair.getKey().equals(bingo.getValue())) {
+								pair.getValue().lock();
+								try {
+									iter.remove();
+									removedSomething = true;
+									pair.getKey().exitTunnel(vehicle);
+									System.out.println("FRIENDSHIP ENDED WITH" + bingo.toString() );
+								} finally {
+									pair.getValue().unlock();
+								}
+							}
+						}
+					} finally {
+						TunnelLock.writeLock().unlock();							
+					}
 				}
 			}
-
-
 		} finally {
 			if (removedSomething) {prioCond.signalAll();}
-			enterLock.unlock();
 			VTLock.writeLock().unlock();
+			lock.unlock();
 		}
 		
 	}
