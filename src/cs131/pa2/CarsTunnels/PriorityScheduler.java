@@ -74,7 +74,7 @@ public class PriorityScheduler extends Tunnel{
 					if(!entered) {
 						prioWait.add(vehicle);
 					}
-				} else if (onWaitingList(vehicle)&&!entered){
+				} else if (onWaitingList(vehicle)&&!entered&&!gottaWait(vehicle)){
 					Iterator it = tunnelList.entrySet().iterator();
 					while (it.hasNext()) {
 						Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)it.next();
