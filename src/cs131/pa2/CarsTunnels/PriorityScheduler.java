@@ -110,7 +110,6 @@ public class PriorityScheduler extends Tunnel{
 			Iterator iter = VehicleAndTunnel.entrySet().iterator();
 			while(iter.hasNext()) {
 				Map.Entry<Vehicle, Tunnel> bingo = (Map.Entry<Vehicle, Tunnel>)iter.next();
-				System.out.println(bingo.toString());
 				if(bingo.getKey().equals(vehicle)) {
 					try {
 						Iterator bitter = tunnelList.entrySet().iterator();
@@ -119,7 +118,7 @@ public class PriorityScheduler extends Tunnel{
 							if(pair.getKey().equals(bingo.getValue())) {
 								bingo.getValue().exitTunnel(bingo.getKey());
 								removedSomething = true;
-								System.out.println("FRIENDSHIP ENDED WITH" + bingo.toString() );
+								//System.out.println("FRIENDSHIP ENDED WITH" + " " + bingo.toString() + " " + "Priority" + bingo.getKey().getPriority() );
 							}
 						}
 					} finally {
