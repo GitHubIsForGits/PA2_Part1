@@ -54,7 +54,9 @@ public class PreemptivePriorityScheduler extends Tunnel{
 		boolean entered = false;
 		lock.lock();
 		try {
-			//Everything
+			while(!entered){
+				
+			}
 		} finally {
 			lock.unlock();
 		}
