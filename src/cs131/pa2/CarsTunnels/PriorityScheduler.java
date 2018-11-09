@@ -61,7 +61,7 @@ public class PriorityScheduler extends Tunnel{
 					Iterator it = tunnelList.entrySet().iterator();
 					while (it.hasNext()) {
 						Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)it.next();
-						if(pair.getKey().tryToEnter(vehicle)) {
+						if(pair.getKey().tryToEnter(vehicle)&&!entered) {
 							VehicleAndTunnel.put(vehicle, pair.getKey());
 							entered = true;
 						}		
@@ -70,11 +70,12 @@ public class PriorityScheduler extends Tunnel{
 					if(!entered) {
 						prioWait.add(vehicle);
 					}
-				} else if (onWaitingList(vehicle)&&!entered&&!gottaWait(vehicle)){
+				} 
+				if (onWaitingList(vehicle)&&!entered&&!gottaWait(vehicle)){
 					Iterator it = tunnelList.entrySet().iterator();
 					while (it.hasNext()) {
 						Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)it.next();
-						if(pair.getKey().tryToEnter(vehicle)) {
+						if(pair.getKey().tryToEnter(vehicle)&&!entered) {
 							prioWait.remove(vehicle);										
 							int maxPrio = 0;
 							for (Vehicle v: prioWait) {
@@ -83,9 +84,9 @@ public class PriorityScheduler extends Tunnel{
 								}
 							}
 							maxWaitingPriority = maxPrio;	
+							entered = true;
 						}					
-						VehicleAndTunnel.put(vehicle, pair.getKey());
-						entered = true;	
+						VehicleAndTunnel.put(vehicle, pair.getKey());	
 					}
 				}
 				
@@ -115,7 +116,7 @@ public class PriorityScheduler extends Tunnel{
 						Iterator bitter = tunnelList.entrySet().iterator();
 						while (bitter.hasNext()) {
 							Map.Entry<Tunnel, Lock> pair = (Map.Entry<Tunnel, Lock>)bitter.next();
-							if(pair.getKey().equals(bingo.getValue())) {
+							if(pair.getKey().equals(bingo.getValue())&&!removedSomething) {
 								bingo.getValue().exitTunnel(bingo.getKey());
 								removedSomething = true;
 								//System.out.println("FRIENDSHIP ENDED WITH" + " " + bingo.toString() + " " + "Priority" + bingo.getKey().getPriority() );
